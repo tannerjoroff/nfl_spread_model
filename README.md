@@ -34,6 +34,7 @@ This project builds an NFL margin-of-victory regression model (XGBoost) to ident
 - Realized performance positive but volatile
 - Max flat-unit drawdown ≈ 13 units
 - Max fractional Kelly bankroll drawdown ≈ 23%
+- ROI on test data using Kelly bankroll ≈ 9.1%
 
 ## Notes
 This project is for educational purposes only and does not constitute betting advice.
