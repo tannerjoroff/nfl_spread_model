@@ -65,7 +65,17 @@ Each feature is marked with its leakage risk.
 - Best decay half-life within a season and across seasons.
 
 ## Findings
-(Add dated entries here.)
+
+### 2026-10-22: first nflverse snapshot (2009 to 2025)
+Source: nflreadpy 0.1.5, polars 2.0.0. Snapshot of `load_schedules` (seasons 1999 to 2025, filtered to exclude the live 2026 season), `load_pbp` and `load_team_stats` (weekly) for 2009 to 2025. 35 files, 219 MB, hashes in `data/manifest.json`.
+
+- **Games:** 267 per season through 2019, 269 in 2020, 284 to 285 from 2021 (17-game season). 2022 has 271 regular-season games because the canceled Bills at Bengals game is not in the schedule. Every game has a result.
+- **Play-by-play:** every season has exactly as many distinct `game_id`s as the schedule, 46,500 to 49,900 plays per season, and 372 columns in every season.
+- **Team stats:** exactly 2 rows per game in every season, 138 columns, and `game_id` is present (the column whose addition broke the old notebook).
+- **Spreads and totals:** present for 100% of games, 2006 to 2025.
+- **Moneylines:** partial before 2010 (2006: 82%, 2007: 99.6%, 2008: 73%, 2009: 95%). From 2010 on, every game has both moneylines except one: `2017_04_CHI_GB`, which has a spread (7.5) but no moneylines. Verdict: confirms "full from 2010" with that single exception, which the moneyline backtests must drop and count.
+- **Starting QB IDs:** present for 100% of games.
+- **Weather:** `temp` and `wind` are missing by design for dome, closed-roof, and open-roof games (open-roof games have none recorded). For outdoor games, coverage is 94% to 99% in most seasons, but only 54% in 2022 and 79% in 2023. Verdict: weather features need a backfill for those seasons (candidate: the free Open-Meteo historical archive, using stadium coordinates) or must treat missing weather explicitly. Do not drop those games silently.
 
 ## Experiment log
 
