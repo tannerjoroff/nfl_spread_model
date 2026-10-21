@@ -210,3 +210,6 @@ __marimo__/
 data/**
 !data/
 !data/manifest.json
+
+# Local snapshot backups (stored outside git)
+*.zip
