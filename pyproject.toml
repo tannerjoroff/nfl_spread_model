@@ -26,6 +26,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not network'"
 markers = [
     "network: test downloads real data (deselect with -m 'not network')",
 ]
