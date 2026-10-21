@@ -1,0 +1,21 @@
+# Every random process loops over these seeds; results are reported as mean and range.
+seeds: [11, 22, 33, 44, 55]
+
+data:
+  dir: data
+  first_season: 2009
+  last_season: 2025      # frozen snapshot; the live 2026 season is pulled separately later
+  tables:
+    schedules:
+      per_season: false
+    pbp:
+      per_season: true
+    team_stats:
+      per_season: true
+      summary_level: week
+
+evaluation:
+  first_test_season: 2015
+  last_test_season: 2024
+  holdout_season: 2025
+  holdout_locked: true   # code refuses to score the holdout season while this is true

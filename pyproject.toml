@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nflmodel"
+version = "0.1.0"
+description = "NFL margin and win probability model with walk-forward betting backtests"
+requires-python = ">=3.11"
+dependencies = [
+    "nflreadpy==0.1.5",
+    "numpy==2.5.4",
+    "pandas==3.0.6",
+    "polars==2.0.0",
+    "pyarrow==26.0.0",
+    "pyyaml==6.0.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "network: test downloads real data (deselect with -m 'not network')",
+]
