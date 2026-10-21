@@ -1,40 +1,30 @@
-# NFL Spread Predictive Model
+# NFL Game Model (rebuild in progress)
 
-## Overview
-This project builds an NFL margin-of-victory regression model (XGBoost) to identify potential spread inefficiencies. Predictions are converted into betting edges, calibrated to empirical cover probabilities using validation data, and evaluated using both flat betting diagnostics and conservative fractional Kelly sizing on a held-out test set.
+An NFL model that predicts margin of victory and win probability, then tests whether any betting strategy (spreads, moneylines, parlays) has an edge over the market. A weekly dashboard comes last.
 
-## Data
-- Source: `nflreadpy`
-- Seasons: 2005–2025 (Regular Season)
-- Unit of observation: Team-level game rows (home and away converted into team rows)
+**Status:** being rebuilt from scratch on the `rebuild` branch. There are no results yet.
 
-## Feature Engineering
-- Base performance metrics (e.g., point differential, yards/play, turnovers, EPA/play)
-- Rolling pre-game features (3-game window, `closed="left"` to avoid leakage)
-- Week 1 handling via prior-season ending rolling stats
-- Opponent-merged features and matchup deltas/ratios
-- Nonlinear interaction features (e.g., power terms)
+## Why the rebuild
 
-## Modeling
-- Baseline: Linear Regression
-- Final: XGBoost Regression predicting point differential
+The original notebook (now in `legacy/`) reported a 9.1% test-set ROI. That result did not reproduce:
 
-## Betting Framework
-- Edge definition: `edge = predicted_home_margin - spread_line`
-- Calibration: Validation-only edge bucketing + global shrinkage to stabilize probabilities
-- Sizing: Fractional Kelly (e.g., 33% Kelly) with a max bet cap
+- The notebook no longer runs against current nflverse data (a schema change in team stats breaks a merge).
+- The saved output came from cells run out of order.
+- A clean top-to-bottom rerun with the original package versions gave 144 bets and a -7.4% bankroll. Across nine random seeds the result ranged from -12% to +1.4%.
+- At the chosen threshold, flat betting on the validation set was -0.6 units over 190 bets, so validation never supported the betting rule.
+- "9.1% ROI" was bankroll growth under Kelly sizing, not return per dollar wagered.
+- The spread and total lines were model features, so the model largely learned the market line back.
 
-## Evaluation
-- Strict chronological train / validation / test split
-- Expected vs realized units comparison
-- Risk metrics: max drawdown in flat units and bankroll drawdown under Kelly sizing
+The old notebook is kept for reference only. Nothing in the rebuild depends on it.
 
-## Key Results (Test Set Summary)
-- Positive expected value out of sample (validation-calibrated)
-- Realized performance positive but volatile
-- Max flat-unit drawdown ≈ 13 units
-- Max fractional Kelly bankroll drawdown ≈ 23%
-- ROI on test data using Kelly bankroll ≈ 9.1%
+## Approach
+
+- Reproducible pipeline: one command rebuilds everything from a hashed data snapshot, with seeded randomness.
+- Walk-forward evaluation by season, with 2025 held out until the model and strategy list are frozen.
+- Every result is compared against market baselines and reported with uncertainty. A result within about two standard errors of zero is reported as no evidence of edge.
+
+Data sources, findings, and the experiment log are in `docs/RESEARCH.md`.
 
 ## Notes
-This project is for educational purposes only and does not constitute betting advice.
+
+This is a modeling project for educational purposes, not betting advice.
