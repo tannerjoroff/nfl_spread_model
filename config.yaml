@@ -15,6 +15,7 @@ data:
       summary_level: week
 
 evaluation:
+  game_types: [REG]      # regular season only for training and evaluation
   first_test_season: 2015
   last_test_season: 2024
   holdout_season: 2025
