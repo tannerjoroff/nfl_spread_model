@@ -99,4 +99,22 @@ Verdict: 2006 to 2008 are usable for EPA and success rate features. CPOE is some
 
 One entry per experiment, newest last: date, what changed, metrics, verdict, commit hash. Results within about two standard errors of zero are recorded as no evidence of edge. Each entry notes how many strategies have been tested so far.
 
-(No experiments yet.)
+### 2026-10-23: market baselines, test seasons 2012 to 2024
+What: score the betting market itself as a predictor, with no model. Predicted home margin = `spread_line`; home win probability = moneylines de-vigged multiplicatively. Regular season only, 3,391 games. Ties (12) are dropped from win probability metrics. One game (`2017_04_CHI_GB`) has no moneylines and is left out of the win probability and favorite-betting numbers. Full per-season table: `results/market_baselines.csv`.
+
+Pooled over 2012 to 2024:
+
+| Metric | Market | Reference point |
+|---|---|---|
+| Margin MAE | 10.02 points | |
+| Margin RMSE | 13.00 points | |
+| Log loss | 0.6094 | 0.693 for always saying 50% |
+| Brier score | 0.2109 | 0.25 for always saying 50% |
+| Favorite win rate | 66.7% (3,359 decided games) | |
+| Bet every moneyline favorite, ROI per unit staked | -2.3% (SE 1.2%) | |
+
+Single seasons vary a lot: log loss ranges from 0.587 (2017) to 0.652 (2015), and betting every favorite ranges from -12.0% (2021) to +6.6% (2013), with a per-season SE of about 4.4%. A single season of favorite betting can look profitable by chance alone.
+
+Verdict: these are the numbers any model has to beat. The favorite-betting loss is about 1.9 SE below zero, which is not conclusive on its own, but it is what the bookmaker's margin predicts: betting without information should lose roughly the vig. The pooled figures are close to the earlier 2010 to 2025 reference (66.5%, 0.609, 0.211, -2.7%), as expected from overlapping seasons; 2025 was not used here.
+
+Standard errors treat bets as independent; week-level and game-level bootstrap intervals come next. Strategies tested so far: 1 (bet every favorite, a reference point, not a candidate strategy). Commit: the commit that adds this entry.
