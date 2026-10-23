@@ -3,7 +3,7 @@ seeds: [11, 22, 33, 44, 55]
 
 data:
   dir: data
-  first_season: 2009
+  first_season: 2006
   last_season: 2025      # frozen snapshot; the live 2026 season is pulled separately later
   tables:
     schedules:
@@ -16,7 +16,7 @@ data:
 
 evaluation:
   game_types: [REG]      # regular season only for training and evaluation
-  first_test_season: 2015
+  first_test_season: 2012
   last_test_season: 2024
   holdout_season: 2025
   holdout_locked: true   # code refuses to score the holdout season while this is true

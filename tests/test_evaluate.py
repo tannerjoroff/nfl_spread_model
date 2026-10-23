@@ -7,7 +7,7 @@ from nflmodel.evaluate import HoldoutError, check_holdout, walk_forward_splits
 
 def test_one_split_per_test_season(cfg):
     splits = walk_forward_splits(cfg)
-    assert [s.test_season for s in splits] == list(range(2015, 2025))
+    assert [s.test_season for s in splits] == list(range(2012, 2025))
 
 
 def test_train_before_validation_before_test(cfg):
@@ -19,9 +19,9 @@ def test_train_before_validation_before_test(cfg):
 
 def test_training_window_expands_from_first_season(cfg):
     splits = walk_forward_splits(cfg)
-    assert all(s.train_seasons[0] == 2009 for s in splits)
-    assert splits[0].train_seasons == tuple(range(2009, 2014))
-    assert len(splits[-1].train_seasons) == len(splits[0].train_seasons) + 9
+    assert all(s.train_seasons[0] == 2006 for s in splits)
+    assert splits[0].train_seasons == tuple(range(2006, 2011))
+    assert len(splits[-1].train_seasons) == len(splits[0].train_seasons) + 12
 
 
 def test_holdout_never_in_any_split(cfg):

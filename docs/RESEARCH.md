@@ -77,6 +77,24 @@ Source: nflreadpy 0.1.5, polars 2.0.0. Snapshot of `load_schedules` (seasons 199
 - **Starting QB IDs:** present for 100% of games.
 - **Weather:** `temp` and `wind` are missing by design for dome, closed-roof, and open-roof games (open-roof games have none recorded). For outdoor games, coverage is 94% to 99% in most seasons, but only 54% in 2022 and 79% in 2023. Verdict: weather features need a backfill for those seasons (candidate: the free Open-Meteo historical archive, using stadium coordinates) or must treat missing weather explicitly. Do not drop those games silently.
 
+### 2026-10-23: snapshot extended back to 2006; test seasons now 2012 to 2024
+Change: data now starts in 2006 (was 2009), and walk-forward test seasons start in 2012 (was 2015). The first split trains on 2006 to 2010, validates on 2011, and tests on 2012. Reason: three more test seasons (13 instead of 10) means roughly 30% more test games and standard errors about 12% smaller, which matters when the question is whether any edge is distinguishable from noise. Moneylines are complete from 2010, so every test season still has full moneyline coverage. Snapshot is now 41 files, 256 MB.
+
+Coverage of the new seasons, compared with later ones (2025 not inspected):
+
+| Season | Games in pbp / schedule | EPA present (pass and run plays) | Air yards present (passes) | CPOE present (passes) | League EPA per play |
+|---|---|---|---|---|---|
+| 2006 | 267 / 267 | 100% | 93.0% | 86.5% | -0.040 |
+| 2007 | 267 / 267 | 100% | 93.4% | 90.5% | -0.028 |
+| 2008 | 267 / 267 | 100% | 93.8% | 92.3% | -0.013 |
+| 2010 | 267 / 267 | 100% | 93.6% | 92.4% | -0.016 |
+| 2015 | 267 / 267 | 100% | 93.5% | 92.6% | -0.014 |
+| 2024 | 285 / 285 | 100% | 92.5% | 88.7% | +0.010 |
+
+Team stats have exactly 2 rows per game in 2006 to 2008, and play-by-play has the same 372 columns as every later season.
+
+Verdict: 2006 to 2008 are usable for EPA and success rate features. CPOE is somewhat thinner in 2006. League-wide EPA per play drifts upward over time (offenses have improved), so efficiency features should be measured relative to the league average for that season, or the model will mistake era for team strength.
+
 ## Experiment log
 
 One entry per experiment, newest last: date, what changed, metrics, verdict, commit hash. Results within about two standard errors of zero are recorded as no evidence of edge. Each entry notes how many strategies have been tested so far.
