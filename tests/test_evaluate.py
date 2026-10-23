@@ -1,8 +1,16 @@
 import copy
+import math
 
+import numpy as np
 import pytest
 
-from nflmodel.evaluate import HoldoutError, check_holdout, walk_forward_splits
+from nflmodel.evaluate import (
+    HoldoutError,
+    check_holdout,
+    margin_metrics,
+    prob_metrics,
+    walk_forward_splits,
+)
 
 
 def test_one_split_per_test_season(cfg):
@@ -46,3 +54,48 @@ def test_splits_refuse_a_config_that_tests_on_the_holdout(cfg):
     bad["evaluation"]["last_test_season"] = 2025
     with pytest.raises(HoldoutError):
         walk_forward_splits(bad)
+
+
+# ---- metrics, checked against values computed by hand
+
+
+def test_margin_metrics_by_hand():
+    # errors are -2 and +6: MAE = 4, RMSE = sqrt((4 + 36) / 2) = sqrt(20)
+    m = margin_metrics([3, -7], [1, -1])
+    assert m["mae"] == pytest.approx(4.0)
+    assert m["rmse"] == pytest.approx(math.sqrt(20))
+    assert m["n"] == 2
+
+
+def test_margin_metrics_skip_missing():
+    assert margin_metrics([3, np.nan], [1, 0])["n"] == 1
+
+
+def test_prob_metrics_by_hand():
+    # log loss = -(ln 0.8 + ln 0.7) / 2; Brier = (0.2^2 + 0.3^2) / 2
+    m = prob_metrics([1, 0], [0.8, 0.3])
+    assert m["log_loss"] == pytest.approx(-(math.log(0.8) + math.log(0.7)) / 2)
+    assert m["brier"] == pytest.approx(0.065)
+    assert m["accuracy"] == 1.0
+
+
+def test_coin_flip_reference_values():
+    # Always saying 50% scores ln(2) = 0.693 log loss and 0.25 Brier: the bar any model must clear.
+    m = prob_metrics([1, 0, 1, 1], [0.5] * 4)
+    assert m["log_loss"] == pytest.approx(math.log(2))
+    assert m["brier"] == pytest.approx(0.25)
+
+
+def test_ties_dropped_and_counted():
+    m = prob_metrics([1, np.nan, 0], [0.8, 0.5, 0.3])
+    assert m["n"] == 2 and m["n_ties"] == 1
+    assert m["brier"] == pytest.approx(0.065)
+
+
+def test_confident_wrong_prediction_stays_finite():
+    assert np.isfinite(prob_metrics([0], [1.0])["log_loss"])
+
+
+def test_missing_probability_rejected():
+    with pytest.raises(ValueError):
+        prob_metrics([1], [np.nan])
