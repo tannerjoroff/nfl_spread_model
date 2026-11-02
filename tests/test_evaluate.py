@@ -6,6 +6,7 @@ import pytest
 
 from nflmodel.evaluate import (
     HoldoutError,
+    bootstrap_ci,
     check_holdout,
     margin_metrics,
     prob_metrics,
@@ -99,3 +100,41 @@ def test_confident_wrong_prediction_stays_finite():
 def test_missing_probability_rejected():
     with pytest.raises(ValueError):
         prob_metrics([1], [np.nan])
+
+
+# ---- bootstrap
+
+
+def test_bootstrap_constant_values_give_zero_width():
+    ci = bootstrap_ci(np.full(50, 0.3), n_boot=200)
+    assert ci["lo"] == pytest.approx(0.3) and ci["hi"] == pytest.approx(0.3)
+
+
+def test_bootstrap_matches_normal_theory():
+    # For a large sample the interval is about mean +/- 1.96 * sd / sqrt(n).
+    x = np.random.default_rng(1).normal(0, 1, 4000)
+    ci = bootstrap_ci(x, n_boot=2000, seed=3)
+    se = x.std(ddof=1) / np.sqrt(len(x))
+    assert ci["se"] == pytest.approx(se, rel=0.1)
+    assert ci["lo"] == pytest.approx(x.mean() - 1.96 * se, abs=0.3 * se)
+    assert ci["hi"] == pytest.approx(x.mean() + 1.96 * se, abs=0.3 * se)
+
+
+def test_week_resampling_is_wider_when_games_in_a_week_move_together():
+    rng = np.random.default_rng(2)
+    weeks = np.repeat(np.arange(100), 15)
+    x = rng.normal(0, 1, 100)[weeks] + rng.normal(0, 1, len(weeks))   # shared week effect
+    by_game = bootstrap_ci(x, n_boot=1000, seed=4)
+    by_week = bootstrap_ci(x, clusters=weeks, n_boot=1000, seed=4)
+    assert by_week["n_clusters"] == 100
+    assert by_week["se"] > 2 * by_game["se"]
+
+
+def test_bootstrap_same_seed_same_result():
+    x = np.random.default_rng(5).normal(size=300)
+    assert bootstrap_ci(x, seed=7, n_boot=500) == bootstrap_ci(x, seed=7, n_boot=500)
+
+
+def test_bootstrap_rejects_nan():
+    with pytest.raises(ValueError):
+        bootstrap_ci([1.0, np.nan])

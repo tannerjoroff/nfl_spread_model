@@ -67,3 +67,32 @@ def prob_metrics(y_true, p) -> dict:
         "n": int(len(y)),
         "n_ties": int(ties.sum()),
     }
+
+
+def bootstrap_ci(values, clusters=None, n_boot: int = 5000, seed: int = 0, alpha: float = 0.05) -> dict:
+    """Bootstrap interval for the mean of per-game values (bet profits, log loss differences, ...).
+
+    clusters=None resamples single games. Passing a label per game (for example
+    "2019-07" for season 2019, week 7) resamples whole weeks instead, which keeps
+    any correlation between games in the same week.
+    """
+    values = np.asarray(values, dtype=float)
+    if np.isnan(values).any():
+        raise ValueError("values contain NaN")
+    if clusters is None:
+        clusters = np.arange(len(values))
+    _, idx = np.unique(np.asarray(clusters), return_inverse=True)
+    sums = np.bincount(idx, weights=values)      # total per cluster
+    counts = np.bincount(idx).astype(float)      # games per cluster
+    k = len(sums)
+
+    rng = np.random.default_rng(seed)
+    boot = np.empty(n_boot)
+    for start in range(0, n_boot, 500):          # chunks keep memory small
+        size = min(500, n_boot - start)
+        picks = rng.integers(0, k, size=(size, k))
+        boot[start:start + size] = sums[picks].sum(axis=1) / counts[picks].sum(axis=1)
+
+    lo, hi = np.quantile(boot, [alpha / 2, 1 - alpha / 2])
+    return {"estimate": values.mean(), "lo": lo, "hi": hi, "se": boot.std(ddof=1),
+            "n": len(values), "n_clusters": k}
