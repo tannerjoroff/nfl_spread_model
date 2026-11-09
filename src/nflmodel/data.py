@@ -243,8 +243,9 @@ def verify_snapshot(cfg: dict) -> list[str]:
     return problems
 
 
-def read_raw(table: str, seasons: list[int] | None = None, cfg: dict | None = None) -> pd.DataFrame:
-    """Read raw snapshot files as pandas. seasons=None reads every snapshot season."""
+def read_raw(table: str, seasons: list[int] | None = None, cfg: dict | None = None,
+             columns: list[str] | None = None) -> pd.DataFrame:
+    """Read raw snapshot files as pandas. seasons=None reads every snapshot season; columns=None reads all."""
     if cfg is None:
         from nflmodel.config import load_config
         cfg = load_config()
@@ -255,11 +256,11 @@ def read_raw(table: str, seasons: list[int] | None = None, cfg: dict | None = No
         if seasons is None:
             seasons = list(range(cfg["data"]["first_season"], cfg["data"]["last_season"] + 1))
         df = pl.concat(
-            [pl.read_parquet(root / raw_path(table, s)) for s in seasons],
+            [pl.read_parquet(root / raw_path(table, s), columns=columns) for s in seasons],
             how="diagonal_relaxed",
         )
     else:
-        df = pl.read_parquet(root / raw_path(table, None))
+        df = pl.read_parquet(root / raw_path(table, None), columns=columns)
         if seasons is not None:
             df = df.filter(pl.col("season").is_in(seasons))
     return df.to_pandas()

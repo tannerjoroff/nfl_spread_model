@@ -15,9 +15,7 @@ from dataclasses import dataclass
 import pandas as pd
 
 from nflmodel.evaluate import margin_metrics, prob_metrics
-
-# Relocated franchises keep one rating across the move.
-FRANCHISE = {"STL": "LA", "SD": "LAC", "OAK": "LV"}
+from nflmodel.games import FRANCHISE
 
 
 @dataclass(frozen=True)

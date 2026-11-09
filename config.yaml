@@ -16,7 +16,13 @@ data:
 
 evaluation:
   game_types: [REG]      # regular season only for training and evaluation
+  first_train_season: 2007   # 2006 only builds history for decayed features
   first_test_season: 2012
   last_test_season: 2024
   holdout_season: 2025
   holdout_locked: true   # code refuses to score the holdout season while this is true
+
+features:
+  team_stats:
+    half_life_grid: [4, 8, 16, 32]          # games; chosen on each split's validation season
+    offseason_weight_grid: [0.25, 0.5, 1.0] # per season boundary; chosen on validation

@@ -27,6 +27,8 @@ def _validate(cfg: dict) -> None:
         raise ValueError("config needs at least 5 seeds")
     if data["first_season"] > data["last_season"]:
         raise ValueError("data.first_season is after data.last_season")
+    if not data["first_season"] <= ev["first_train_season"] < ev["first_test_season"] - 1:
+        raise ValueError("first_train_season must be in the data and leave room for a validation season")
     if not data["first_season"] <= ev["first_test_season"] <= ev["last_test_season"]:
         raise ValueError("test seasons must fall inside the data seasons")
     if ev["holdout_season"] <= ev["last_test_season"]:

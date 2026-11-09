@@ -1,11 +1,12 @@
 """Rebuild everything from raw data to results. Each phase adds its step here."""
 
-from scripts import baselines, build_data
+from scripts import baselines, build_data, build_features
 
 
 def main() -> int:
     steps = [
         ("build_data", lambda: build_data.main([])),
+        ("build_features", lambda: build_features.main([])),
         ("baselines", lambda: baselines.main([])),
     ]
     for name, step in steps:

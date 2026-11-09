@@ -12,6 +12,10 @@ import pandas as pd
 
 from nflmodel.data import read_raw
 
+# Relocated franchises keep one identity. Schedules use the historical code (STL);
+# play-by-play already uses the current one (LA).
+FRANCHISE = {"STL": "LA", "SD": "LAC", "OAK": "LV"}
+
 GAME_COLUMNS = [
     "game_id", "season", "week", "game_type", "gameday", "location",
     "home_team", "away_team", "home_score", "away_score", "result",

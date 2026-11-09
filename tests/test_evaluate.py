@@ -27,10 +27,11 @@ def test_train_before_validation_before_test(cfg):
         assert s.val_season not in s.train_seasons
 
 
-def test_training_window_expands_from_first_season(cfg):
+def test_training_window_expands_from_first_train_season(cfg):
+    # 2006 is warm-up only: it builds history for decayed features but is never a training row.
     splits = walk_forward_splits(cfg)
-    assert all(s.train_seasons[0] == 2006 for s in splits)
-    assert splits[0].train_seasons == tuple(range(2006, 2011))
+    assert all(s.train_seasons[0] == 2007 for s in splits)
+    assert splits[0].train_seasons == tuple(range(2007, 2011))
     assert len(splits[-1].train_seasons) == len(splits[0].train_seasons) + 12
 
 

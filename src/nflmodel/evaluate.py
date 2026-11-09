@@ -16,7 +16,7 @@ class HoldoutError(RuntimeError):
 class Split:
     test_season: int
     val_season: int                  # tuning, calibration, thresholds
-    train_seasons: tuple[int, ...]   # every season from the first data season through test_season - 2
+    train_seasons: tuple[int, ...]   # first_train_season through test_season - 2
 
 
 def check_holdout(seasons: Iterable[int], cfg: dict) -> None:
@@ -30,9 +30,9 @@ def check_holdout(seasons: Iterable[int], cfg: dict) -> None:
 
 
 def walk_forward_splits(cfg: dict) -> list[Split]:
-    """One split per test season: train through S-2, validate on S-1, test on S."""
+    """One split per test season: train from first_train_season through S-2, validate on S-1, test on S."""
     ev = cfg["evaluation"]
-    first = cfg["data"]["first_season"]
+    first = ev["first_train_season"]
     splits = [
         Split(test_season=s, val_season=s - 1, train_seasons=tuple(range(first, s - 1)))
         for s in range(ev["first_test_season"], ev["last_test_season"] + 1)
