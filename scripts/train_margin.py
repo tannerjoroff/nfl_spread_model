@@ -1,12 +1,16 @@
-"""Walk-forward margin models (ridge and XGBoost) for each feature group set.
+"""Walk-forward margin models (ridge and XGBoost), adding feature groups one at a time.
 
     python -m scripts.train_margin
+
+Starts from the base groups, then tries each candidate group in a fixed order. A
+candidate is kept only if pooled ridge validation RMSE improves on the current set;
+test seasons are scored for every set but never used for that decision.
 
 Needs data/interim/team_games.parquet from scripts.build_features. Writes:
 - results/margin_models.csv: per test season and pooled MAE and RMSE for every model
   (XGBoost as the mean over seeds, with the range), next to the market and Elo.
-- results/margin_validation.csv: pooled validation RMSE per group set, the number
-  used to decide whether a feature group is kept.
+- results/margin_validation.csv: pooled validation RMSE per group set and the
+  keep or drop decision for each candidate group.
 - results/margin_intervals.csv: paired bootstrap intervals, our error minus the market's and Elo's.
 - results/margin_choices.csv: the settings each split chose.
 - data/interim/margin_predictions.parquet: test-season predictions for later phases.
@@ -24,9 +28,10 @@ from nflmodel.evaluate import bootstrap_ci, check_holdout, walk_forward_splits
 from nflmodel.features.team_stats import team_games_path
 from nflmodel.games import build_games, select_game_types
 from nflmodel.models.elo import run_elo
-from nflmodel.models.margin import feature_tables, run_split
+from nflmodel.models.margin import ELO_COLUMNS, feature_tables, run_split
 
-GROUP_SETS = {"efficiency": ["efficiency"], "efficiency+box_score": ["efficiency", "box_score"]}
+BASE_GROUPS = ["efficiency", "box_score"]
+CANDIDATE_GROUPS = ["elo", "situational", "record"]   # tried in this order
 RESULTS = Path("results")
 
 
@@ -89,24 +94,25 @@ def main(argv: list[str] | None = None) -> int:
     all_games = all_games[all_games["season"] <= last]
     games = select_game_types(all_games, cfg)
     games = games[games["season"] >= cfg["evaluation"]["first_train_season"]].reset_index(drop=True)
-    games = games.merge(run_elo(all_games)[["game_id", "elo_margin"]], on="game_id", how="left")
+    games = games.merge(run_elo(all_games)[["game_id", *ELO_COLUMNS]], on="game_id", how="left")
     games["market"], games["elo"] = games["spread_line"], games["elo_margin"]
 
     print("building features for every decay setting...")
     feats = feature_tables(games, team_games, cfg)
 
     metrics, intervals, choices, validation, all_preds = [], [], [], [], []
-    for name, groups in GROUP_SETS.items():
+
+    def run_set(groups: list[str]) -> dict[str, float]:
+        name = "+".join(groups)
         preds, val_sq, val_n = [], {"ridge": 0.0, "xgb": 0.0}, 0
         for split in splits:
             print(f"{name}: test {split.test_season}")
             p, ch = run_split(split, games, feats, cfg, groups, seeds)
-            p = p.merge(games[["game_id", "market", "elo"]], on="game_id")
-            preds.append(p)
-            n_val = int((games["season"] == split.val_season).sum())
-            val_n += n_val
-            val_sq["ridge"] += n_val * ch["ridge_val_rmse"] ** 2
-            val_sq["xgb"] += n_val * np.mean([ch[f"xgb_seed{s}"]["val_rmse"] ** 2 for s in seeds])
+            preds.append(p.merge(games[["game_id", "market", "elo"]], on="game_id"))
+            n = ch["val_games"]
+            val_n += n
+            val_sq["ridge"] += n * ch["ridge_val_rmse"] ** 2
+            val_sq["xgb"] += n * np.mean([ch[f"xgb_seed{s}"]["val_rmse"] ** 2 for s in seeds])
             flat = {k: v for k, v in ch.items() if not k.startswith("xgb_seed")}
             for s in seeds:
                 flat[f"xgb_depth_seed{s}"] = ch[f"xgb_seed{s}"]["max_depth"]
@@ -116,14 +122,25 @@ def main(argv: list[str] | None = None) -> int:
         all_preds.append(preds.assign(groups=name))
         metrics.append(season_metrics(preds, seeds).assign(groups=name))
         intervals.extend({"groups": name, **r} for r in paired_intervals(preds, seeds))
-        validation.extend({"groups": name, "model": m, "pooled_val_rmse": np.sqrt(v / val_n), "val_games": val_n}
-                          for m, v in val_sq.items())
+        return {m: float(np.sqrt(v / val_n)) for m, v in val_sq.items()} | {"val_games": val_n}
+
+    kept = list(BASE_GROUPS)
+    best = run_set(kept)
+    validation.append({"groups": "+".join(kept), "candidate": "", "decision": "base", **best})
+    for g in CANDIDATE_GROUPS:
+        trial = run_set(kept + [g])
+        decision = "kept" if trial["ridge"] < best["ridge"] else "dropped"
+        validation.append({"groups": "+".join(kept + [g]), "candidate": g, "decision": decision, **trial})
+        if decision == "kept":
+            kept, best = kept + [g], trial
+    print("final groups:", "+".join(kept))
 
     out = repo_root() / RESULTS
     out.mkdir(parents=True, exist_ok=True)
     tables = {
         "margin_models.csv": pd.concat(metrics, ignore_index=True),
-        "margin_validation.csv": pd.DataFrame(validation),
+        "margin_validation.csv": pd.DataFrame(validation).rename(
+            columns={"ridge": "ridge_pooled_val_rmse", "xgb": "xgb_pooled_val_rmse"}),
         "margin_intervals.csv": pd.DataFrame(intervals),
         "margin_choices.csv": pd.DataFrame(choices),
     }

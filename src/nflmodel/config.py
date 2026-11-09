@@ -29,6 +29,8 @@ def _validate(cfg: dict) -> None:
         raise ValueError("data.first_season is after data.last_season")
     if not data["first_season"] <= ev["first_train_season"] < ev["first_test_season"] - 1:
         raise ValueError("first_train_season must be in the data and leave room for a validation season")
+    if ev["first_train_season"] >= ev["first_test_season"] - ev["validation_seasons"]:
+        raise ValueError("the first test season needs training seasons before its validation seasons")
     if not data["first_season"] <= ev["first_test_season"] <= ev["last_test_season"]:
         raise ValueError("test seasons must fall inside the data seasons")
     if ev["holdout_season"] <= ev["last_test_season"]:

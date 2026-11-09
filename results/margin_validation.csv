@@ -1,5 +1,5 @@
-groups,model,pooled_val_rmse,val_games
-efficiency,ridge,13.3806,3375
-efficiency,xgb,13.4458,3375
-efficiency+box_score,ridge,13.3567,3375
-efficiency+box_score,xgb,13.4186,3375
+groups,candidate,decision,ridge_pooled_val_rmse,xgb_pooled_val_rmse,val_games
+efficiency+box_score,,base,13.5403,13.5645,10078
+efficiency+box_score+elo,elo,kept,13.4950,13.5121,10078
+efficiency+box_score+elo+situational,situational,dropped,13.5051,13.5151,10078
+efficiency+box_score+elo+record,record,dropped,13.4952,13.5155,10078

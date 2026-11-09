@@ -174,3 +174,32 @@ Verdict: every model is clearly worse than the market, beating it in 0 of 13 tes
 
 Configurations tested so far: 4 margin models (2 feature sets times 2 model types). Betting strategies tested: 1 (bet every favorite, a reference point). Commit: the commit that adds this entry.
 
+### 2026-11-09: three-season validation; adding Elo, situational, and record groups one at a time
+What changed: (1) settings are now chosen on the pooled error over the last three seasons before each test season, each scored by a model trained only on earlier seasons; the final model is refit on every season before the test season. (2) Starting from efficiency plus box score, three groups were tried in a fixed order and kept only if pooled ridge validation RMSE improved: Elo (both teams' pre-game ratings and Elo's predicted margin; no betting data), situational (neutral site, rest days, short week, off a bye, divisional game, primetime), and record (decayed win percentage). The expectation for record was stated before running: little or no gain. Tables: `results/margin_*.csv`.
+
+Validation decisions (pooled over 13 splits, 10,078 validation games):
+
+| Set | Ridge validation RMSE | Decision |
+|---|---|---|
+| Efficiency + box score | 13.540 | base |
+| + Elo | 13.495 | kept |
+| + Elo + situational | 13.505 | dropped |
+| + Elo + record | 13.495 (13.4952 vs 13.4950) | dropped |
+
+Pooled test results, 2012 to 2024, 3,391 games (MAE in points):
+
+| Set | Ridge | XGBoost (mean over seeds) |
+|---|---|---|
+| Efficiency + box score | 10.36 | 10.40 |
+| + Elo (final set) | 10.33 | 10.37 |
+| Market | 10.02 | |
+| Elo alone | 10.34 | |
+
+Final set (efficiency + box score + Elo), paired absolute-error differences, 95% intervals resampling weeks:
+- Ridge minus market: +0.30 (+0.21 to +0.40). Ridge beat the market in 0 of 13 seasons.
+- Ridge minus Elo: -0.01 (-0.08 to +0.06). Ridge beat Elo in 8 of 13 seasons.
+
+Verdict: three-season validation steadied the choices (ridge penalty 1000 in 11 of 13 splits, half-life 8 or 16 in 11 of 13) and improved the efficiency-plus-box-score model from 10.44 to 10.36 MAE on the test seasons. Adding Elo helped on validation and test. The model is now level with Elo (no evidence of a difference either way) and still clearly worse than the market. Situational features made validation slightly worse and were dropped. Record added nothing, as expected: win-loss record carries no information beyond point differential and Elo. Caveat: the chosen ridge penalty sits at the top of the grid (1000), so a wider grid may help.
+
+Configurations tested so far: 12 margin models (6 feature sets times 2 model types). Betting strategies tested: 1 (reference). Commit: the commit that adds this entry.
+

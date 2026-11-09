@@ -17,6 +17,7 @@ data:
 evaluation:
   game_types: [REG]      # regular season only for training and evaluation
   first_train_season: 2007   # 2006 only builds history for decayed features
+  validation_seasons: 3      # settings are chosen on the last 3 seasons before each test season
   first_test_season: 2012
   last_test_season: 2024
   holdout_season: 2025

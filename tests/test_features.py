@@ -126,3 +126,13 @@ def test_feature_table_has_home_and_away_columns_per_group():
     feats = team_stat_features(games, tg, half_life=8, offseason_weight=0.5, groups=["efficiency"])
     assert len(feats.columns) == 1 + 2 * len(GROUPS["efficiency"])
     assert feats.loc[1, "away_off_epa"] > 0 > feats.loc[1, "home_off_epa"]   # A was better in g1
+
+
+def test_record_counts_wins_and_ties():
+    games = pd.concat([one_game(), one_game().assign(game_id="g2", home_score=20, away_score=20, result=0)])
+    pbp = pd.DataFrame([play("A", rush=1, epa=0.1), play("B", rush=1, epa=0.1),
+                        play("A", game_id="g2", rush=1, epa=0.1), play("B", game_id="g2", rush=1, epa=0.1)])
+    stats = team_game_stats(pbp, games).set_index(["game_id", "team"])
+    assert stats.loc[("g1", "A"), "off_wins"] == 1 and stats.loc[("g1", "B"), "off_wins"] == 0
+    assert stats.loc[("g2", "A"), "off_wins"] == 0.5
+    assert GROUPS["record"] == ["off_wins"]

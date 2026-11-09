@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from nflmodel.evaluate import HoldoutError, Split
-from nflmodel.models.margin import feature_columns, run_split
+from nflmodel.models.margin import feature_columns, run_split, validation_folds
 
 GROUPS = ["efficiency"]
 SPLIT = Split(test_season=2012, val_season=2011, train_seasons=tuple(range(2007, 2011)))
@@ -75,3 +75,15 @@ def test_holdout_split_refused(small_cfg, data):
     games, feats = data
     with pytest.raises(HoldoutError):
         run_split(Split(2025, 2024, (2007,)), games, feats, small_cfg, GROUPS, seeds=[11])
+
+
+def test_feature_columns_mix_team_and_static_groups():
+    cols = feature_columns(["record", "elo", "situational"])
+    assert cols[:2] == ["home_off_wins", "away_off_wins"]
+    assert "elo_margin" in cols and "neutral" in cols and "home_neutral" not in cols
+
+
+def test_validation_folds_use_only_earlier_seasons(cfg):
+    folds = validation_folds(Split(2018, 2017, tuple(range(2007, 2017))), cfg)
+    assert [v for _, v in folds] == [2015, 2016, 2017]
+    assert all(max(tr) == v - 1 and tr[0] == 2007 for tr, v in folds)

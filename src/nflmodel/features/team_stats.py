@@ -1,10 +1,11 @@
 """Team ratings from play-by-play: decayed, pre-game, and relative to the league.
 
-Two feature groups share this machinery:
+Three feature groups share this machinery:
 - efficiency: EPA per play (all, pass, rush) and success rate.
 - box_score: points per game, yards per play (all, pass, rush), explosive play rate,
   sack rate, turnover rate, third-down conversion rate, red zone touchdown rate,
   penalty yards per game.
+- record: win percentage.
 
 Each team-game row holds totals for the team's offense ("off_") and for the
 opponent's offense in that game ("def_", what the defense allowed). For defense,
@@ -38,10 +39,12 @@ BOX_SCORE = {
     "rz_td": "rz_trips",           # drives reaching the opponent's 20 that end in a touchdown
     "penalty_yards": "games",      # penalty yards committed
 }
-RATES = {**EFFICIENCY, **BOX_SCORE}
+RECORD = {"wins": "games"}          # win percentage, a tie counting as half
+RATES = {**EFFICIENCY, **BOX_SCORE, **RECORD}
 GROUPS = {
     "efficiency": [f"{side}_{s}" for side in ("off", "def") for s in EFFICIENCY],
     "box_score": [f"{side}_{s}" for side in ("off", "def") for s in BOX_SCORE],
+    "record": ["off_wins"],         # def_wins would just be the opponent's record in the same games
 }
 
 _FLAGS = ["pass", "rush", "qb_kneel", "qb_spike", "sack", "interception", "fumble_lost",
@@ -93,18 +96,21 @@ def team_game_stats(pbp: pd.DataFrame, games: pd.DataFrame) -> pd.DataFrame:
     away = _franchise(played["away_team"])
     base = pd.concat([
         pd.DataFrame({"game_id": played["game_id"], "season": played["season"], "gameday": played["gameday"],
-                      "team": home, "opp": away, "points": played["home_score"]}),
+                      "team": home, "opp": away, "points": played["home_score"],
+                      "opp_points": played["away_score"]}),
         pd.DataFrame({"game_id": played["game_id"], "season": played["season"], "gameday": played["gameday"],
-                      "team": away, "opp": home, "points": played["away_score"]}),
+                      "team": away, "opp": home, "points": played["away_score"],
+                      "opp_points": played["home_score"]}),
     ], ignore_index=True)
 
     stats = stats.reset_index()
-    points = base[["game_id", "team", "points"]].assign(games=1.0)
+    points = base[["game_id", "team", "points"]].assign(
+        games=1.0, wins=(base["points"] > base["opp_points"]) + 0.5 * (base["points"] == base["opp_points"]))
     stats = points.merge(stats, on=["game_id", "team"], how="left").fillna(0)
 
     off = stats.add_prefix("off_").rename(columns={"off_game_id": "game_id", "off_team": "team"})
     dfn = stats.add_prefix("def_").rename(columns={"def_game_id": "game_id", "def_team": "opp"})
-    out = base.drop(columns="points").merge(off, on=["game_id", "team"]).merge(dfn, on=["game_id", "opp"])
+    out = base.drop(columns=["points", "opp_points"]).merge(off, on=["game_id", "team"]).merge(dfn, on=["game_id", "opp"])
     return out.sort_values(["gameday", "game_id", "team"]).reset_index(drop=True)
 
 
