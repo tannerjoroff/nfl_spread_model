@@ -1,0 +1,17 @@
+groups,model,vs,error,estimate,lo,hi,se,n,weeks
+efficiency,ridge,market,abs_error,0.4140,0.3107,0.5172,0.0532,3391,225
+efficiency,ridge,market,squared_error,12.1087,9.0558,15.1805,1.5663,3391,225
+efficiency,ridge,elo,abs_error,0.0963,0.0101,0.1826,0.0438,3391,225
+efficiency,ridge,elo,squared_error,2.7806,0.2442,5.3459,1.2837,3391,225
+efficiency,xgb,market,abs_error,0.4665,0.3577,0.5763,0.0561,3391,225
+efficiency,xgb,market,squared_error,13.6154,10.3701,16.8370,1.6582,3391,225
+efficiency,xgb,elo,abs_error,0.1488,0.0561,0.2415,0.0476,3391,225
+efficiency,xgb,elo,squared_error,4.2873,1.5411,7.0381,1.4029,3391,225
+efficiency+box_score,ridge,market,abs_error,0.4179,0.3156,0.5200,0.0522,3391,225
+efficiency+box_score,ridge,market,squared_error,12.4721,9.3196,15.6257,1.6189,3391,225
+efficiency+box_score,ridge,elo,abs_error,0.1002,0.0066,0.1941,0.0477,3391,225
+efficiency+box_score,ridge,elo,squared_error,3.1441,0.5140,5.7790,1.3326,3391,225
+efficiency+box_score,xgb,market,abs_error,0.4432,0.3348,0.5524,0.0556,3391,225
+efficiency+box_score,xgb,market,squared_error,12.9886,9.5573,16.4504,1.7526,3391,225
+efficiency+box_score,xgb,elo,abs_error,0.1255,0.0312,0.2186,0.0478,3391,225
+efficiency+box_score,xgb,elo,squared_error,3.6606,0.8708,6.4399,1.4289,3391,225

@@ -145,3 +145,32 @@ Verdict: the market is clearly better than Elo; every interval excludes zero, ab
 
 Strategies tested so far: 1 (bet every favorite, a reference point). Commit: the commit that adds this entry.
 
+### 2026-11-09: first margin models (team ratings from play-by-play), test seasons 2012 to 2024
+What: predict the home margin from decayed, league-relative team ratings (no betting lines). Two feature sets: efficiency alone (EPA per play overall, pass, rush, success rate; offense and defense, home and away: 16 inputs) and efficiency plus box score (56 inputs). Two models: ridge regression and XGBoost (5 seeds). Per split, half-life (4 to 32 games), offseason weight (0.25 to 1.0), and the ridge penalty were chosen by ridge on the validation season; XGBoost reused the decay settings and chose depth and tree count (early stopping) on validation. The chosen models were refit on training plus validation and predicted the test season once. A test corrupts every test-season score and confirms no choice or prediction changes. Tables: `results/margin_models.csv`, `margin_validation.csv`, `margin_intervals.csv`, `margin_choices.csv`.
+
+Pooled test results, 3,391 regular season games:
+
+| Model | Margin MAE | Margin RMSE |
+|---|---|---|
+| Market (spread) | 10.02 | 13.00 |
+| Elo | 10.34 | 13.36 |
+| Ridge, efficiency | 10.44 | 13.46 |
+| XGBoost, efficiency (seed range) | 10.49 (10.48 to 10.51) | 13.52 |
+| Ridge, efficiency + box score | 10.44 | 13.47 |
+| XGBoost, efficiency + box score (seed range) | 10.47 (10.44 to 10.49) | 13.49 |
+
+Paired differences in absolute error (ours minus baseline; positive means ours is worse), 95% intervals resampling weeks:
+
+| | vs market | vs Elo |
+|---|---|---|
+| Ridge, efficiency | +0.41 (+0.31 to +0.52) | +0.10 (+0.01 to +0.18) |
+| XGBoost, efficiency | +0.47 (+0.36 to +0.58) | +0.15 (+0.06 to +0.24) |
+| Ridge, efficiency + box score | +0.42 (+0.32 to +0.52) | +0.10 (+0.01 to +0.19) |
+| XGBoost, efficiency + box score | +0.44 (+0.33 to +0.55) | +0.13 (+0.03 to +0.22) |
+
+Box score decision (made on validation, as fixed in advance): pooled validation RMSE fell from 13.381 to 13.357 for ridge and from 13.446 to 13.419 for XGBoost, so the group is kept. The gain is small (about 0.02 to 0.03 points of RMSE), and on the test seasons it was mixed (ridge slightly worse, XGBoost slightly better).
+
+Verdict: every model is clearly worse than the market, beating it in 0 of 13 test seasons, and clearly worse than the untuned Elo baseline; all intervals exclude zero. Ridge is better than XGBoost, so the extra flexibility is not helping at this sample size. The chosen settings jump around between splits (ridge penalty anywhere from 0.1 to 1000; half-life 4 to 32), a sign that choosing on a single validation season is noisy. Likely reasons Elo still wins: Elo learns directly from final margins, and implicitly adjusts for opponents; our ratings are not opponent-adjusted and carry no home field information beyond a constant.
+
+Configurations tested so far: 4 margin models (2 feature sets times 2 model types). Betting strategies tested: 1 (bet every favorite, a reference point). Commit: the commit that adds this entry.
+

@@ -26,3 +26,14 @@ features:
   team_stats:
     half_life_grid: [4, 8, 16, 32]          # games; chosen on each split's validation season
     offseason_weight_grid: [0.25, 0.5, 1.0] # per season boundary; chosen on validation
+
+models:
+  select_metric: rmse                           # validation metric used to choose settings
+  ridge_alphas: [0.1, 1, 10, 100, 1000]
+  xgb:
+    max_depth_grid: [2, 3, 4]
+    learning_rate: 0.03
+    max_trees: 2000                             # early stopping on validation picks the count
+    early_stopping_rounds: 100
+    subsample: 0.8
+    colsample_bytree: 0.8

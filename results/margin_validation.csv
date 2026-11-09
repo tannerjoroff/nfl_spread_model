@@ -1,0 +1,5 @@
+groups,model,pooled_val_rmse,val_games
+efficiency,ridge,13.3806,3375
+efficiency,xgb,13.4458,3375
+efficiency+box_score,ridge,13.3567,3375
+efficiency+box_score,xgb,13.4186,3375
