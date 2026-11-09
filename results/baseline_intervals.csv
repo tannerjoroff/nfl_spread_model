@@ -1,0 +1,9 @@
+quantity,resample,estimate,se,lo,hi,seed_spread,n,clusters
+elo_minus_market_log_loss,week,0.0214,0.0036,0.0144,0.0285,0.0004,3378,225
+elo_minus_market_log_loss,game,0.0214,0.0036,0.0143,0.0286,0.0004,3378,3378
+elo_minus_market_brier,week,0.0095,0.0016,0.0063,0.0126,0.0001,3378,225
+elo_minus_market_brier,game,0.0095,0.0016,0.0063,0.0127,0.0001,3378,3378
+elo_minus_market_margin_mae,week,0.3177,0.0519,0.2164,0.4208,0.0034,3391,225
+elo_minus_market_margin_mae,game,0.3177,0.0521,0.2159,0.4205,0.0064,3391,3391
+market_favorite_roi,week,-0.0228,0.0125,-0.0472,0.0015,0.0010,3359,225
+market_favorite_roi,game,-0.0228,0.0123,-0.0469,0.0014,0.0010,3359,3359

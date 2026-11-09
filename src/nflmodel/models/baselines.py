@@ -21,29 +21,42 @@ def market_win_prob(games: pd.DataFrame) -> pd.Series:
     return pd.Series(p_home, index=games.index, name="p_home")
 
 
+def favorite_bets(games: pd.DataFrame) -> pd.DataFrame:
+    """One 1-unit moneyline bet on the market favorite of every game with both moneylines.
+
+    Pick'em games (de-vigged 50/50) have no favorite and are skipped. won is 1, 0,
+    or NaN for a tie, whose stake is refunded (profit 0).
+    """
+    p = market_win_prob(games)
+    bets = games[p.notna() & (p != 0.5)]
+    home_fav = (p[bets.index] > 0.5).to_numpy()
+    odds = np.where(home_fav, bets["home_moneyline"], bets["away_moneyline"])
+    won = np.where(home_fav, bets["home_win"], 1 - bets["home_win"])
+    return pd.DataFrame({
+        "game_id": bets["game_id"].to_numpy(),
+        "season": bets["season"].to_numpy(),
+        "week": bets["week"].to_numpy(),
+        "won": won,
+        "profit": moneyline_profit(odds, won),
+    })
+
+
 def score_market(games: pd.DataFrame) -> dict:
     """Score the market baselines on a set of games.
 
     Win probability metrics use games with both moneylines (missing ones are counted).
     "Bet every favorite" stakes 1 unit on the moneyline favorite of every game; a tie
-    refunds the stake and is left out of ROI. fav_roi_se treats bets as independent
-    (bootstrap intervals come later).
+    refunds the stake and is left out of ROI. fav_roi_se treats bets as independent;
+    see bootstrap_ci for intervals that resample weeks.
     """
     margins = margin_metrics(games["result"], market_margin(games))
 
     p_home = market_win_prob(games)
     has_ml = p_home.notna()
-    ml = games[has_ml]
-    probs = prob_metrics(ml["home_win"], p_home[has_ml])
+    probs = prob_metrics(games.loc[has_ml, "home_win"], p_home[has_ml])
 
-    p = p_home[has_ml]
-    fav = ml[p != 0.5]
-    home_fav = p[p != 0.5] > 0.5
-    fav_odds = np.where(home_fav, fav["home_moneyline"], fav["away_moneyline"])
-    fav_won = np.where(home_fav, fav["home_win"], 1 - fav["home_win"])
-    profit = moneyline_profit(fav_odds, fav_won)
-    decided = ~np.isnan(fav_won)
-    graded = profit[decided]
+    bets = favorite_bets(games)
+    graded = bets[bets["won"].notna()]
 
     return {
         "games": len(games),
@@ -53,8 +66,9 @@ def score_market(games: pd.DataFrame) -> dict:
         "ml_missing": int((~has_ml).sum()),
         "log_loss": probs["log_loss"],
         "brier": probs["brier"],
-        "fav_win_rate": (fav_won[decided] == 1).mean(),
+        "accuracy": probs["accuracy"],
+        "fav_win_rate": (graded["won"] == 1).mean(),
         "fav_bets": len(graded),
-        "fav_roi": graded.mean(),
-        "fav_roi_se": graded.std(ddof=1) / np.sqrt(len(graded)),
+        "fav_roi": graded["profit"].mean(),
+        "fav_roi_se": graded["profit"].std(ddof=1) / np.sqrt(len(graded)),
     }

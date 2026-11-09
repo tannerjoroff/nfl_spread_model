@@ -69,6 +69,15 @@ def prob_metrics(y_true, p) -> dict:
     }
 
 
+def per_game_log_loss(y_true, p):
+    """Log loss of each game separately, for paired comparisons between models. Ties must be removed first."""
+    y_true = np.asarray(y_true, dtype=float)
+    p = np.clip(np.asarray(p, dtype=float), PROB_CLIP, 1 - PROB_CLIP)
+    if np.isnan(y_true).any() or np.isnan(p).any():
+        raise ValueError("drop ties and missing probabilities before computing per-game log loss")
+    return -(y_true * np.log(p) + (1 - y_true) * np.log(1 - p))
+
+
 def bootstrap_ci(values, clusters=None, n_boot: int = 5000, seed: int = 0, alpha: float = 0.05) -> dict:
     """Bootstrap interval for the mean of per-game values (bet profits, log loss differences, ...).
 

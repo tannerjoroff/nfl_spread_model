@@ -9,6 +9,7 @@ from nflmodel.evaluate import (
     bootstrap_ci,
     check_holdout,
     margin_metrics,
+    per_game_log_loss,
     prob_metrics,
     walk_forward_splits,
 )
@@ -138,3 +139,13 @@ def test_bootstrap_same_seed_same_result():
 def test_bootstrap_rejects_nan():
     with pytest.raises(ValueError):
         bootstrap_ci([1.0, np.nan])
+
+
+def test_per_game_log_loss_averages_to_prob_metrics():
+    y, p = [1, 0, 1], [0.8, 0.3, 0.4]
+    assert per_game_log_loss(y, p).mean() == pytest.approx(prob_metrics(y, p)["log_loss"])
+
+
+def test_per_game_log_loss_rejects_ties():
+    with pytest.raises(ValueError):
+        per_game_log_loss([1, np.nan], [0.6, 0.5])

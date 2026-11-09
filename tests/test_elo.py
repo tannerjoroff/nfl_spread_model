@@ -3,7 +3,7 @@ import math
 import pandas as pd
 import pytest
 
-from nflmodel.models.elo import EloParams, mov_multiplier, run_elo, win_prob
+from nflmodel.models.elo import EloParams, mov_multiplier, run_elo, score_elo, win_prob
 
 
 def make_games(rows):
@@ -101,3 +101,11 @@ def test_unplayed_game_gets_prediction_without_update():
 def test_custom_params_used():
     elo = run_elo(make_games([(2020, "2020-09-13", "A", "B", 7)]), EloParams(home_adv=0))
     assert elo.loc[0, "elo_prob_home"] == pytest.approx(0.5)
+
+
+def test_score_elo_uses_elo_columns():
+    games = make_games([(2020, "2020-09-13", "A", "B", 7), (2020, "2020-09-20", "A", "B", -3)])
+    games["home_win"] = [1.0, 0.0]
+    scored = score_elo(games.merge(run_elo(games), on="game_id"))
+    assert scored["games"] == 2 and scored["ties"] == 0
+    assert scored["accuracy"] == 0.5   # Elo favors the home team both times

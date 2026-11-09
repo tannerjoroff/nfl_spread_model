@@ -14,6 +14,8 @@ from dataclasses import dataclass
 
 import pandas as pd
 
+from nflmodel.evaluate import margin_metrics, prob_metrics
+
 # Relocated franchises keep one rating across the move.
 FRANCHISE = {"STL": "LA", "SD": "LAC", "OAK": "LV"}
 
@@ -78,3 +80,18 @@ def run_elo(games: pd.DataFrame, params: EloParams = EloParams()) -> pd.DataFram
         ratings[away] -= shift
 
     return pd.DataFrame(rows, columns=["game_id", "elo_home_pre", "elo_away_pre", "elo_prob_home", "elo_margin"])
+
+
+def score_elo(games: pd.DataFrame) -> dict:
+    """Score Elo on games that already carry run_elo's columns (merged on game_id)."""
+    margins = margin_metrics(games["result"], games["elo_margin"])
+    probs = prob_metrics(games["home_win"], games["elo_prob_home"])
+    return {
+        "games": len(games),
+        "ties": probs["n_ties"],
+        "margin_mae": margins["mae"],
+        "margin_rmse": margins["rmse"],
+        "log_loss": probs["log_loss"],
+        "brier": probs["brier"],
+        "accuracy": probs["accuracy"],
+    }

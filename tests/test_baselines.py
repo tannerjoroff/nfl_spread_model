@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from nflmodel.models.baselines import market_margin, market_win_prob, score_market
+from nflmodel.models.baselines import favorite_bets, market_margin, market_win_prob, score_market
 
 
 @pytest.fixture
@@ -10,6 +10,9 @@ def games():
     # g1: home favorite wins.  g2: away favorite wins.  g3: pick'em, no favorite to bet.
     # g4: home favorite ties (refund).  g5: moneylines missing.
     return pd.DataFrame({
+        "game_id":        ["g1",  "g2",  "g3",  "g4",  "g5"],
+        "season":         [2020] * 5,
+        "week":           [1,     1,     2,     2,     3],
         "result":         [3,     -7,    1,     0,     10],
         "home_win":       [1.0,   0.0,   1.0,   np.nan, 1.0],
         "spread_line":    [4.0,   -3.5,  0.0,   7.0,   2.5],
@@ -40,3 +43,12 @@ def test_score_market_by_hand(games):
     assert s["fav_roi"] == pytest.approx((0.5 + 100 / 180) / 2)
     # margin errors: 1, 3.5, -1, 7, -7.5
     assert s["margin_mae"] == pytest.approx((1 + 3.5 + 1 + 7 + 7.5) / 5)
+
+
+def test_favorite_bets_by_hand(games):
+    bets = favorite_bets(games).set_index("game_id")
+    # g3 is a pick'em and g5 has no moneylines: no bet. g4 is a tie: refunded.
+    assert list(bets.index) == ["g1", "g2", "g4"]
+    assert bets.loc["g2", "profit"] == pytest.approx(100 / 180)   # away favorite won
+    assert np.isnan(bets.loc["g4", "won"]) and bets.loc["g4", "profit"] == 0
+    assert list(bets["week"]) == [1, 1, 2]

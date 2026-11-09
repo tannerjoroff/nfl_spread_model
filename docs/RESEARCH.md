@@ -100,7 +100,7 @@ Verdict: 2006 to 2008 are usable for EPA and success rate features. CPOE is some
 One entry per experiment, newest last: date, what changed, metrics, verdict, commit hash. Results within about two standard errors of zero are recorded as no evidence of edge. Each entry notes how many strategies have been tested so far.
 
 ### 2026-10-23: market baselines, test seasons 2012 to 2024
-What: score the betting market itself as a predictor, with no model. Predicted home margin = `spread_line`; home win probability = moneylines de-vigged multiplicatively. Regular season only, 3,391 games. Ties (12) are dropped from win probability metrics. One game (`2017_04_CHI_GB`) has no moneylines and is left out of the win probability and favorite-betting numbers. Full per-season table: `results/market_baselines.csv`.
+What: score the betting market itself as a predictor, with no model. Predicted home margin = `spread_line`; home win probability = moneylines de-vigged multiplicatively. Regular season only, 3,391 games. Ties (12) are dropped from win probability metrics. One game (`2017_04_CHI_GB`) has no moneylines and is left out of the win probability and favorite-betting numbers. Full per-season table: `results/baselines.csv` (rows with `model = market`; the file was named `market_baselines.csv` when this entry was written).
 
 Pooled over 2012 to 2024:
 
@@ -118,3 +118,30 @@ Single seasons vary a lot: log loss ranges from 0.587 (2017) to 0.652 (2015), an
 Verdict: these are the numbers any model has to beat. The favorite-betting loss is about 1.9 SE below zero, which is not conclusive on its own, but it is what the bookmaker's margin predicts: betting without information should lose roughly the vig. The pooled figures are close to the earlier 2010 to 2025 reference (66.5%, 0.609, 0.211, -2.7%), as expected from overlapping seasons; 2025 was not used here.
 
 Standard errors treat bets as independent; week-level and game-level bootstrap intervals come next. Strategies tested so far: 1 (bet every favorite, a reference point, not a candidate strategy). Commit: the commit that adds this entry.
+
+### 2026-11-09: Elo baseline vs the market, with bootstrap intervals
+What: an Elo model with fixed, untuned settings (start 1500, K = 20, 48 points of home field and none at neutral sites, a margin of victory multiplier, one third regression toward 1500 between seasons; predicted margin = rating gap / 25). Ratings update on every game including playoffs and are scored on regular season games only, 2012 to 2024. Elo uses no betting lines. Each game's rating uses only earlier games, which `tests/test_leakage.py` checks. Bootstrap intervals use 5,000 resamples, averaged over the 5 config seeds (bounds moved by at most 0.006 across seeds). Tables: `results/baselines.csv` and `results/baseline_intervals.csv`.
+
+Pooled over 2012 to 2024:
+
+| Metric | Market | Elo |
+|---|---|---|
+| Margin MAE | 10.02 | 10.34 |
+| Log loss | 0.6094 | 0.6307 |
+| Brier score | 0.2109 | 0.2204 |
+| Accuracy | 66.6% | 64.5% |
+
+Paired differences (Elo minus market on the same games; positive means Elo is worse), 95% intervals resampling weeks:
+
+| Difference | Estimate | 95% interval |
+|---|---|---|
+| Log loss | +0.0214 | +0.0144 to +0.0285 |
+| Brier score | +0.0095 | +0.0063 to +0.0126 |
+| Margin MAE (points) | +0.32 | +0.22 to +0.42 |
+
+Market "bet every favorite" ROI: -2.3%, 95% interval -4.7% to +0.2% (weeks), -4.7% to +0.1% (games).
+
+Verdict: the market is clearly better than Elo; every interval excludes zero, about 6 SE for log loss. Elo beat the market in only 2 of 13 seasons (2014 and 2015 log loss), consistent with chance. Elo sits between a coin flip (0.693) and the market (0.609), which is the range our own model has to escape upward from. Week-level and game-level intervals are nearly identical here, so games within a week show little correlation for these quantities; week resampling stays the primary method because it costs nothing when the correlation is absent. The favorite-betting interval includes zero, so blind favorite betting shows no evidence of an edge in either direction.
+
+Strategies tested so far: 1 (bet every favorite, a reference point). Commit: the commit that adds this entry.
+
